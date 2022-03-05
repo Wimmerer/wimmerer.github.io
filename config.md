@@ -15,7 +15,7 @@ ignore = ["node_modules/"]
 generate_rss = true
 website_title = "A Sparse Blog"
 website_descr = "Sparse blog about sparse things"
-website_url   = "https://tlienart.github.io/FranklinTemplates.jl/"
+website_url   = "https://wimmerer.github.io/"
 
 +++
 
