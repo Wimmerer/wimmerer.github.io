@@ -1,4 +1,0 @@
-Sitemap: https://wimmerer.github.io/sitemap.xml
-
-User-agent: *
-Disallow:
