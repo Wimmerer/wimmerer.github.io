@@ -16,7 +16,7 @@ generate_rss = true
 website_title = "A Sparse Blog"
 website_descr = "Sparse blog about sparse things"
 website_url   = "https://tlienart.github.io/FranklinTemplates.jl/"
-@def prepath = ""
+
 +++
 
 <!--
