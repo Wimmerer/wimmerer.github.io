@@ -1,8 +1,8 @@
-@def title = "SuiteSparseGraphBLAS.jl Performance in v0.6"
+@def title = "SuiteSparseGraphBLAS.jl Performance and v0.6"
 @def authors = "Will Kimmerer"
 @def published = "March 23 2022"
 
-Check out [Introduction to SuiteSparseGraphBLAS v0.6](/blog/2022/03/SuiteSparseGraphBLAS_introduction.md) if you are new to SuiteSparseGraphBLAS.jl, or want to see the new functionality in v0.6.
+If you're new to SuiteSparseGraphBLAS.jl check out the [docs](https://graphblas.juliasparse.org/stable/)! 
 
 As always, benchmark things yourself! Most operations will be **much** faster in SSGrB.jl, especially when the matrices are large enough that it starts multithreading. A Julia package like `SparseArrays.jl` might (for now) be faster for functions not built into SSGrB.jl. Also check out the ***PERFORMANCE TIPS LINKS HERE, BOTH DOCS AND Dr. Davis PDF***
 
@@ -19,6 +19,12 @@ We need:
 - GBMatrixC (Sparse) * GBMatrixR (Dense)
 - GBMatrixR (Sparse) * GBMatrixC (Dense)
 - Investigate Juthos stuff, ThreadedSparseArrays.jl, ThreadedSparseCSC.jl
+
+## Sparse * Vec
+- SparseMatrixCSC * Vector
+- GBMatrixC (Sparse) * Vector
+- GBMatrixR (Sparse) * Vector
+
 
 ## Dense * Sparse
 
@@ -49,3 +55,4 @@ We need:
 
 ## One or two examples, implemented using algebraic semiring
 
+# 

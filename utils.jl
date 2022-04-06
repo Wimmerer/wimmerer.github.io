@@ -62,7 +62,7 @@ end
 function stringmime(m, x)
     open("/tmp/foo", "w") do io
         show(io, m, x)
-    end
+    end 
     sprint(io->show(io, m, x))
 end
 
