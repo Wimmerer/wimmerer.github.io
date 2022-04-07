@@ -27,10 +27,3 @@ $$ C_{ik} = \bigoplus\limits_{j=1}^{n}{(A_{ij} \otimes B_{jk})} $$
 
 where $\oplus$ is some binary operator (a monoid in particular) which takes the place of the $\sum$ reduction, and $\otimes$ is some binary operator which takes the place of $\times$ in typical arithmetic.
 
-## Let's see some code!!
-
-\repl{
-a = 10
-using SuiteSparseGraphBLAS
-A = GBMatrix([[1,2] [3,4]])
-}
