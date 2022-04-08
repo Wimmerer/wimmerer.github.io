@@ -9,7 +9,7 @@
 
 If you're new to `SuiteSparseGraphBLAS.jl` check out the [docs](https://graphblas.juliasparse.org/stable/)! 
 
-In this post I'll first give a very brief introduction to GraphBLAS, followed by some benchmarks vs. Julia's `SparseArrays.jl` standard library. After that  briefly describe some of the new features in v0.6, and finally a [roadmap](#roadmap) for the next couple versions.
+In this post I'll first give a very brief introduction to GraphBLAS, followed by some benchmarks vs. Julia's `SparseArrays.jl` standard library. After that  briefly describe some of the [new features in v0.6](#new_features_in_v06), and finally a [roadmap](#roadmap) for the next couple versions.
 
 # What is SuiteSparseGraphBLAS.jl?
 
@@ -102,14 +102,46 @@ Always feel free to ask for performance tips in the [#graphblas Julia Slack chan
 
 \figenv{}{/assets/plots/transpose.svg}{width:100%}
 
-## Subassign
+# New Features/Changes in v0.6
 
-We need:
-- SparseMatrixCSC <- SparseMatrixCSC
-- GBMatrix <- GBMatrix
+v0.6 contained a *ton* of changes under the hood to support faster development in the future and clean things up. The type system was completely overhauled to enable new matrix types with special extensions, the low level wrapper was scrubbed of any human-written contamination, and the operator/user-defined-function system was rewritten.
+
+Despite the focus on the internals there are several new complete features as well as some experimental ones.
+
+### User Defined Fill Value
+
+The default `GBMatrix` returns `nothing` when indexing into an "implicit-zero" or non-stored value. This better matches the GraphBLAS method of attaching the implicit values to *operators* like `max` and `*`. It also is more natural for graphs, where there is a semantic difference between a stored zero (an edge with weight zero), and an implicit zero (no edge).
+
+Users may now directly set the fill value best suited to their application. This can be done in 3 ways:
+
+1. On construction: a new keyword argument for constructors, `fill`.
+2. `setfill!`: a new mutating function which can be used to change the fill value. This function may only change the fill value to another value within the same domain to maintain type stability.
+3. `setfill`: a new non-mutating function which returns a new `GBMatrix` which aliases the original, but with a new fill value. This new value may be of any type.
+
+These changes allow the `GBMatrix` to be seamlessly used for general scientific applications that expect implicit zeros *to be* zero while adhering to the original design intended for graph algorithms.
+
+### `mmread` Function
+
+Previously reading Matrix Market files was supported only by first reading into a `SparseArrays.SparseMatrixCSC` before converting, which was slow and memory intensive. We now have a native `SuiteSparseGraphBLAS.mmread` function. It remains unexported to avoid clashes with other packages. In the future it will likely be superseded (but not replaced) by some function which can automatically detect and read from a number of formats.
+
+### Serialization
+
+Using the `Serialization` Julia standard library users can now easily serialize and deserialize a GraphBLAS data structures. The serialized array is compressed using LZ4 and is much faster to both read and write than a Matrix Market file.
+
+### StorageOrders
+
+A new dependency on StorageOrders.jl makes it easier to parametrize new `AbstractGBArray` types, for instance by restricting the orientation to `StorageOrders.RowMajor()` or `StorageOrders.ColMajor()`. The experimental `OrientedGBMatrix` and `GBMatrixC`/`GBMatrixR` subtypes take advantage of this.
+
+Users may now also call `gbset(A, :format, RowMajor())`, instead of `gbset(A, :format, :byrow)` avoiding the use of magic symbols. 
+
+### `apply` and Deprecation of Scalar Argument `map`
+
+The new function `apply[!]` is now the direct wrapper of the `GrB_apply` function. `map` still functions as expected, but no longer accepts a scalar argument. Previously, when `map` was the direct wrapper of `GrB_apply`, `map(+, A, 3)` was legal and equivalent to `A .+ 3`. This caused many (mostly obscure) ambiguities between `map(op::Function, A::GBArray, x)`, `map(op::Function, x, A::GBArray)` and several external methods. 
+
+`apply` now performs this function, althoug the recommended method remains dot-broadcasting. 
+
+### Experimental `as` function
+
+The new `as` function grew 
 
 # Roadmap
-
-## One or two examples, implemented using algebraic semiring
-
-# 
