@@ -5,13 +5,13 @@
 
 # A New Version of SuiteSparseGraphBLAS.jl
 
-`SuiteSparseGraphBLAS.jl` v0.6 just recently released with a lot of changes. The biggest news is that the exported interface should now be considered relatively stable. We're still a while away from v1.0, but most new development will be documentation, entirely new bells and whistles, and convenience functions. Significant new development will also occur in other extension packages in the future.
+`SuiteSparseGraphBLAS.jl` (SSGrB) v0.6 just recently released with a lot of changes. The biggest news is that the exported interface should now be considered relatively stable. We're still a while away from v1.0, but most new development will be documentation, entirely new bells and whistles, and convenience functions. Significant new development will also occur in other extension packages in the future.
 
 If you're new to `SuiteSparseGraphBLAS.jl` check out the [docs](https://graphblas.juliasparse.org/stable/)! 
 
 In this post I'll first give a very brief introduction to GraphBLAS, followed by some benchmarks vs. Julia's `SparseArrays.jl` standard library. After that  briefly describe some of the new features in v0.6, and finally a [roadmap](#roadmap) for the next couple versions.
 
-# What is SuiteSparseGraphBLAS?
+# What is SuiteSparseGraphBLAS.jl?
 
 `SuiteSparseGraphBLAS.jl` is a sparse linear algebra library with some special features oriented to graph algorithms. It takes operations like matrix multiply, and turns them into higher order functions which replace the normal arithmetic operations `+` and `*` with other binary operators, like `max` or `&&`.
 
@@ -21,7 +21,7 @@ $$ C_{ik} = \sum\limits_{j=1}^{n}{A_{ij} \times B_{jk}} $$
 
 This expression uses the arithmetic [semiring](https://en.wikipedia.org/wiki/Semiring) $(+, \times)$, an abstract algebra structure consisting of two binary operators that interact in a particular way. 
 
-There are plenty of other interesting semirings to choose from, and no reason to limit ourselves to the arithmetic one! We could, for instance, use the max-plus semiring $(\max, +)$ (one of the tropical semirings). Then our index expression above looks like:
+There are plenty of other interesting semirings to choose from, and no reason to limit ourselves to the arithmetic one! We could, for instance, use the max-plus semiring $(\max, +)$ (one of the [tropical semirings](https://en.wikipedia.org/wiki/Tropical_semiring)). Then our index expression above looks like:
 
 $$ C_{ik} = \max\limits_{j=1}^{n}{(A_{ij} + B_{jk})} $$
 
@@ -33,7 +33,7 @@ where $\oplus$ is some binary operator (a monoid in particular) which takes the 
 
 ## Let's see some code!!
 
-What does a simple operation look like? The equivalence between a matrix-vector multiplication and breadth-first search is a key component of linear algebraic graph algorithms, so we'll implement one iteration as shown in the image below:
+What does a simple operation look like? The equivalence between a matrix-vector multiplication and breadth-first search is a key component of linear algebraic graph algorithms, so we'll show a simple matvec of the matrix and vector below:
 
 \figenv{Adjacency matrix of a directed graph and a single iteration of BFS}{/assets/AdjacencyBFS.png}{width:100%}
 
@@ -65,52 +65,42 @@ julia> v = GBVector([4], [10]; nrows = 7)
 
     (4,1)   10
 
+julia> A * v
+7x1 GraphBLAS int64_t matrix, bitmap by col
+  2 entries, memory: 328 bytes
+
+    (1,1)   20
+    (7,1)   110
+
 ```
 
+Basic operations should be familiar to any Julia user. But we can do 
 
 # Show Me the Numbers!
 
 `SuiteSparseGraphBLAS.jl` has loads of extensions to normal sparse linear algebra, but it's also *fast* and multithreaded. Let's look at some numbers!
 
-As always, benchmark things yourself. Most operations will be **much** faster in `SuiteSparseGraphBLAS.jl`, especially when the matrices are large enough that multithreading kicks in. 
+As always, benchmark things yourself. Most operations will be faster in `SuiteSparseGraphBLAS.jl`, particularly when the matrices are large enough that multithreading kicks in. 
 
-A Julia package like `SparseArrays.jl` might (for now) be faster for functions not built into SSGrB.jl. But maintaining best performance can be finicky in any numerical package, and there's plenty of ways to accidentally reduce performance like orientation of matrices and accidental densification. Feel free to ask for performance tips in the [#graphblas Julia Slack channel](https://julialang.slack.com/archives/C023B0WGMHR) or open an issue on GitHub. 
+However, maintaining good performance can be tricky in any numerical package, and there's plenty of ways to accidentally reduce performance. For instance, below you'll notice that when `A` is stored in `RowMajor` format it can be quite a bit faster than operations where `A` is stored in `ColMajor` format. This isn't always the case, some operations favor column orientation. 
 
-## Matrix Vector Multiplication
+Always feel free to ask for performance tips in the [#graphblas Julia Slack channel](https://julialang.slack.com/archives/C023B0WGMHR) or open an issue on GitHub. And check out the [SuiteSparse:GraphBLAS User Guide](https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/GraphBLAS_UserGuide.pdf), especially the section on performance.
+
+## Sparse Matrix $\cdot$ Dense Vector
 
 \figenv{}{/assets/plots/densevec.svg}{width:100%}
-We need:
-- SparseMatrixCSC * Matrix
-- GBMatrixC (Sparse) * GBMatrixC (Dense)
-- GBMatrixR (Sparse) * GBMatrixR (Dense)
-- GBMatrixC (Sparse) * GBMatrixR (Dense)
-- GBMatrixR (Sparse) * GBMatrixC (Dense)
-- Investigate Juthos stuff, ThreadedSparseArrays.jl, ThreadedSparseCSC.jl
 
-## Sparse * Vec
-- SparseMatrixCSC * Vector
-- GBMatrixC (Sparse) * Vector
-- GBMatrixR (Sparse) * Vector
+## Sparse Matrix $\cdot$ (n $\times$ 2) Dense Matrix
 
+\figenv{}{/assets/plots/denseby2.svg}{width:100%}
 
-## Dense * Sparse
+## Sparse Matrix $\cdot$ (n $\times$ 32) Dense Matrix
 
-We need:
-- Matrix * SparseMatrixCSC
-- GBMatrixC (Dense) * GBMatrixC (Sparse)
-- GBMatrixR (Dense) * GBMatrixR (Sparse)
-- GBMatrixC (Dense) * GBMatrixR (Sparse)
-- GBMatrixR (Dense) * GBMatrixC (Sparse)
-- Investigate Juthos stuff, ThreadedSparseArrays.jl, ThreadedSparseCSC.jl
+\figenv{}{/assets/plots/denseby32.svg}{width:100%}
 
-## Sparse * Sparse
+## Transpose
 
-We need:
-- SparseMatrixCSC * SparseMatrixCSC
-- GBMatrixC * GBMatrixC
-- GBMatrixR * GBMatrixC
-- GBMatrixC * GBMatrixR
-- GBMatrixR * GBMatrixR
+\figenv{}{/assets/plots/transpose.svg}{width:100%}
 
 ## Subassign
 
