@@ -140,8 +140,50 @@ The new function `apply[!]` is now the direct wrapper of the `GrB_apply` functio
 
 `apply` now performs this function, althoug the recommended method remains dot-broadcasting. 
 
-### Experimental `as` function
+### `wait` Function Fully Implemented
 
-The new `as` function grew 
+To fully support calling SuiteSparseGraphBLAS.jl the `wait` function has been fully implemented
 
+## Experimental Functionality
+
+### `as` Function
+
+The new `as` functions grew out of an internal need to safely and quickly view a `GBMatrix` as a `DenseMatrix`/`SparseMatrixCSC` or vice-versa. 
+
+```julia
+julia> A = GBMatrix([[1, 2] [3,4]])
+2x2 GraphBLAS int64_t matrix, full by col
+  4 entries, memory: 288 bytes
+
+    (1,1)   1
+    (2,1)   2
+    (1,2)   3
+    (2,2)   4
+
+julia> SuiteSparseGraphBLAS.as(Matrix, A) do mat
+           display(mat)
+           mat .+= 1
+           sum(mat)
+       end
+2×2 Matrix{Int64}:
+ 1  3
+ 2  4
+14
+
+julia> A
+2x2 GraphBLAS int64_t matrix, full by col
+  4 entries, memory: 288 bytes
+
+    (1,1)   2
+    (2,1)   3
+    (1,2)   4
+    (2,2)   5
+```
+Note that this functionality is currently somewhat dangerous. If `mat` escapes the scope of `as` in some way, for instance by returning the `Transpose` of `mat`, the underlying memory may be freed by `SuiteSparseGraphBLAS.jl`. If the user attempts to return `mat` directly the `as` function will gracefully copy the matrix rather than return an array that may be invalidated in the future. 
+
+### `OrientedGBMatrix`, `GBMatrixR` and `GBMatrixC`
+
+Experimental matrix types that do not allow their orientation to be changed.  
+
+### 
 # Roadmap
