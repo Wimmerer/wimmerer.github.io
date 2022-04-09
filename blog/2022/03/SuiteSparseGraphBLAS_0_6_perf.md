@@ -181,9 +181,5 @@ julia> A
 ```
 Note that this functionality is currently somewhat dangerous. If `mat` escapes the scope of `as` in some way, for instance by returning the `Transpose` of `mat`, the underlying memory may be freed by `SuiteSparseGraphBLAS.jl`. If the user attempts to return `mat` directly the `as` function will gracefully copy the matrix rather than return an array that may be invalidated in the future. 
 
-### `OrientedGBMatrix`, `GBMatrixR` and `GBMatrixC`
-
-Experimental matrix types that do not allow their orientation to be changed.  
-
-### 
 # Roadmap
+
