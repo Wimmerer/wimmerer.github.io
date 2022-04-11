@@ -219,7 +219,7 @@ The performance is [discussed](#discussion) briefly after the plots below which 
 
 ## Discussion
 
-When the dense matrix is low-dimensional and only a single thread is used, Julia compares very favorably with, and often beats, `SuiteSparseGraphBLAS.jl`. When 2 threads are available and the sparse matrix is stored in row-major orientation `SuiteSparseGraphBLAS.jl` begins to pull ahead significantly. Once a full 16 threads are used `SuiteSparseGraphBLAS.jl` is between 7 and 15 times faster on all tested matrices. 
+When the dense matrix is low-dimensional and only a single thread is used, Julia compares very favorably with, and often beats, `SuiteSparseGraphBLAS.jl`. When 2 threads are available and the sparse matrix is stored in row-major orientation `SuiteSparseGraphBLAS.jl` begins to pull ahead significantly. Once a full 16 threads are used `SuiteSparseGraphBLAS.jl` on row-major matrices is between *8 and 31 times faster on all tested matrices.* 
 
 `SuiteSparse:GraphBLAS` uses well over a dozen subalgorithms for matrix multiplication internally to achieve this performance. In particular when `A` is a sparse row-oriented matrix, and `B` is a dense column oriented matrix `SuiteSparse:GraphBLAS` will switch to a highly optimized dot-product algorithm, which is often much faster than the saxpy based algorithm used when `A` is column oriented.
 
