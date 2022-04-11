@@ -3,8 +3,7 @@
 @def published = "March 23 2022"
 
 
-# A New Version of SuiteSparseGraphBLAS.jl
-
+# SuiteSparseGraphBLAS.jl
 `SuiteSparseGraphBLAS.jl` (SSGrB) v0.6 just recently released with a lot of changes. The biggest news is that the exported interface should now be considered relatively stable. We're still a while away from v1.0, but most new development will be documentation, entirely new bells and whistles, and convenience functions. Significant new development will also occur in other extension packages in the future.
 
 If you're new to `SuiteSparseGraphBLAS.jl` check out the [docs](https://graphblas.juliasparse.org/stable/)! 
@@ -74,7 +73,23 @@ julia> A * v
 
 ```
 
-Basic operations should be familiar to any Julia user. But we can do 
+```julia
+function triangle_centrality1(A)
+    T = *(A, A', (+, *), mask=A)
+    y = reduce(+, T, dims=2)
+    k = reduce(+, y)
+    return (3 * (A * y) - 2 * (T * y) .+ y) ./ k
+end
+
+function triangle_centrality(A)
+    T = mul(A, A', (+, pair), mask=A, Descriptor(structural_mask=true))
+    y = reduce(+, T, dims=2)
+    k = reduce(+, y)
+    return (3.0 * mul(A, y) .- (2.0 * mul(T, y, (+, second))) .+ y) ./ k
+end
+```
+
+# What can SuiteSparseGraphBLAS.jl do?
 
 # Show Me the Numbers!
 
@@ -103,6 +118,8 @@ Always feel free to ask for performance tips in the [#graphblas Julia Slack chan
 ## Transpose
 
 \figenv{}{/assets/plots/transpose.svg}{width:100%}
+
+# A New Version of SuiteSparseGraphBLAS.jl
 
 # New Features/Changes in v0.6
 
