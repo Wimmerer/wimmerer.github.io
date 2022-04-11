@@ -199,27 +199,27 @@ However, maintaining good performance can be tricky in any numerical package, an
 
 Always feel free to ask for performance tips in the [#graphblas Julia Slack channel](https://julialang.slack.com/archives/C023B0WGMHR) or open an issue on GitHub. And check out the [SuiteSparse:GraphBLAS User Guide](https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/GraphBLAS_UserGuide.pdf), especially the section on performance.
 
-The performance is [discussed](#discussion) briefly after the plots below.
+The performance is [discussed](#discussion) briefly after the plots below which show the runtime of several operations in `SuiteSparseGraphBLAS.jl` normalized to the runtime of `SparseArrays.SparseMatrixCSC` performing the same operations. `SuiteSparseGraphBLAS.jl` is shown in both column (green bars) and row (red bars) orientation, and with 1, 2, and 16 threads.
 
 ## Sparse Matrix $\cdot$ Dense Vector
 
-\figenv{}{/assets/plots/densevec.svg}{width:100%}
+\figenv{}{/assets/plots/densevec.svg}{width:105%}
 
 ## Sparse Matrix $\cdot$ (n $\times$ 2) Dense Matrix
 
-\figenv{}{/assets/plots/denseby2.svg}{width:100%}
+\figenv{}{/assets/plots/denseby2.svg}{width:105%}
 
 ## Sparse Matrix $\cdot$ (n $\times$ 32) Dense Matrix
 
-\figenv{}{/assets/plots/denseby32.svg}{width:100%}
+\figenv{}{/assets/plots/denseby32.svg}{width:105%}
 
 ## Transpose
 
-\figenv{}{/assets/plots/transpose.svg}{width:100%}
+\figenv{}{/assets/plots/transpose.svg}{width:105%}
 
 ## Discussion
 
-When the dense matrix is low-dimensional and only a single thread is used Julia compares very favorably with, and often beats, `SuiteSparseGraphBLAS.jl`. When 2 threads are available and the sparse matrix is stored in row-major orientation `SuiteSparseGraphBLAS.jl` begins to pull ahead significantly. Once a full 16 threads are used `SuiteSparseGraphBLAS.jl` is between 10 and 15 times faster on all tested matrices. 
+When the dense matrix is low-dimensional and only a single thread is used, Julia compares very favorably with, and often beats, `SuiteSparseGraphBLAS.jl`. When 2 threads are available and the sparse matrix is stored in row-major orientation `SuiteSparseGraphBLAS.jl` begins to pull ahead significantly. Once a full 16 threads are used `SuiteSparseGraphBLAS.jl` is between 7 and 15 times faster on all tested matrices. 
 
 `SuiteSparse:GraphBLAS` uses well over a dozen subalgorithms for matrix multiplication internally to achieve this performance. In particular when `A` is a sparse row-oriented matrix, and `B` is a dense column oriented matrix `SuiteSparse:GraphBLAS` will switch to a highly optimized dot-product algorithm, which is often much faster than the saxpy based algorithm used when `A` is column oriented.
 
@@ -306,11 +306,11 @@ julia> A
 ```
 Note that this functionality is currently somewhat dangerous. If `mat` escapes the scope of `as` in some way, for instance by returning the `Transpose` of `mat`, the underlying memory may be freed by `SuiteSparseGraphBLAS.jl`. If the user attempts to return `mat` directly the `as` function will gracefully copy the matrix rather than return an array that may be invalidated in the future.
 
-## Iteration
+### Iteration
 
 Recent versions of `SuiteSparse:GraphBLAS` have added the ability to iterate the stored values of a row or column. This functionality takes advantage of that, and is particularly useful to iterate over neighbors when implementing the `Graphs.jl` interface.
 
-## Automatic Differentiation
+### Automatic Differentiation
 
 Automatic Differentiation support continues to improve, with additional constructor rules, and rules for the `second` and `first` families of semirings. The biggest remaining missing pieces are the tropical semirings, and potentially user-defined functions.
 
@@ -318,21 +318,24 @@ Automatic Differentiation support continues to improve, with additional construc
 
 There's lots of upcoming features, extensions, and JuliaLab Compiler Trickery™ on the horizon but here's a few important updates to look out for:
 
-## SuiteSparse Support
+### SuiteSparse Support
 
 Supporting the SuiteSparse solvers is 1st on the list, and support will be released sometime in April 2022. This is a relatively simple addition, but involves quite a bit of duplicated code from `SuiteSparse.jl` which assumes the use of `SparseMatrixCSC`.
 
-## GBPirate.jl Full Release
+### GBPirate.jl Full Release
 
 `GBPirate.jl` allows users of `SparseArrays.jl` to pirate certain methods of that package to use the more performant ones found in `SuiteSparseGraphBLAS.jl`. Because this involves copying on output it is not always faster, and the remaining development involves finding a heuristic for when this is beneficial.
 
-## User Defined Types
+### User Defined Types
 
 User defined types are not currently part of the public interface of `SuiteSparseGraphBLAS.jl` while the interface is improved. This feature will enable users to use any statically sized `isbits` type, like dual-numbers, colors,  as elements of a `GBMatrix`. Release is planned for late April 2022.
 
-## GBGraphs.jl
+### GBGraphs.jl
 
 A new `Graphs.jl` backend built on `SuiteSparseGraphBLAS.jl` will allow users access to the full `Graphs.jl` ecosystem, while letting them develop fast algorithms in the language of linear algebra!
 
 # Conclusion
 
+If you've got any need for sparse matrix operations give `SuiteSparseGraphBLAS.jl` a try, and feel free to open an issue or contact me directly if you run into problems or have a feature request! 
+
+-- Will Kimmerer
