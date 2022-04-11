@@ -123,15 +123,15 @@ h6 {
 .franklin-content h1 {
   padding-bottom: 0.5em;
   border-bottom: 3px double lightgrey;
-  margin-top: 1.5em;
-  margin-bottom: 1em;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
 }
 
 .franklin-content h2 {
   padding-bottom: 0.3em;
   border-bottom: 1px solid lightgrey;
   margin-top: 2em;
-  margin-bottom: 1em;
+  margin-bottom: 0.5em;
 }
 
 .franklin-content h1 a { color: inherit; }
@@ -344,14 +344,15 @@ code {
 .bloglist {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  grid-gap: 1rem;
+  gap: 1rem;
+  padding-top: 1%;
 }
 
 .bloglist > p {
   padding: 0.5rem 0.5rem 0.5rem 0.5rem;
   font-size: 0.9em;
   font-family: Open Sans, sans-serif;
-  font-weight: 100;
+  font-weight: 600;
   line-height: 1.1rem;
   border-radius: 5px;
   border: 1px solid #BFBFBF;
@@ -365,7 +366,6 @@ code {
 
 .bloglist > p a {
   display: block;
-  font-weight: 600;
   padding-bottom: 0.5em;
 }
 
@@ -421,4 +421,10 @@ code {
   border-radius: 0;
   padding-left: 1em !important;
   background: white;
+}
+
+.im-50 {text-align: center;}
+.im-50 img {
+    padding: 0;
+    width: 110%;
 }

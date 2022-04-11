@@ -1,4 +1,4 @@
-@def title = "SuiteSparseGraphBLAS.jl Performance and v0.6"
+@def title = "SuiteSparseGraphBLAS.jl: Introduction"
 @def authors = "Will Kimmerer"
 @def published = "March 23 2022"
 
@@ -88,7 +88,9 @@ Always feel free to ask for performance tips in the [#graphblas Julia Slack chan
 
 ## Sparse Matrix $\cdot$ Dense Vector
 
-\figenv{}{/assets/plots/densevec.svg}{width:100%}
+@@im-50
+![](/assets/plots/densevec.svg)
+@@
 
 ## Sparse Matrix $\cdot$ (n $\times$ 2) Dense Matrix
 

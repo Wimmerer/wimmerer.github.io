@@ -44,7 +44,7 @@ function hfun_blogposts()
                     rawdate = Date(pubdate, dateformat"U d Y")
                     days[i] = day(rawdate)
                 end
-                date = Dates.format(rawdate, "d U, YYYY")
+                date = Dates.format(rawdate, "Y-mm-dd")
                 lines[i] = "\n[$title]($url)\n$date\n"
             end
             # sort by day
