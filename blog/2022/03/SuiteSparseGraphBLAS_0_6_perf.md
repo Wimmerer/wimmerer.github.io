@@ -9,7 +9,9 @@ This blog post serves a couple purposes. The first is to introduce Julia users t
 
 ## What is SuiteSparseGraphBLAS.jl
 
-[`SuiteSparseGraphBLAS.jl`](https://github.com/JuliaSparse/SuiteSparseGraphBLAS.jl) is a sparse linear algebra library with some special features oriented to graph algorithms. The headline feature is taking the matrix multiplication function, and turning it into a higher order function. Instead of the normal arithmetic operations `+` and `*` a user could substitute other binary operators, like `max` or `&&`.
+[`SuiteSparseGraphBLAS.jl`](https://github.com/JuliaSparse/SuiteSparseGraphBLAS.jl) is a sparse linear algebra library with some special features oriented to graph algorithms.  It's an interface to the SuiteSparse implementation of the [GraphBLAS](https://graphblas.org) standard, by [Tim Davis](https://people.engr.tamu.edu/davis).  SuiteSparseGraphBLAS.jl serves two purposes: (1) it can replace `SparseArrays.jl` with faster parallel methods when using the plus-times semiring conventional linear algebra, and (2) it serves as a Julia interface to the full set of GraphBLAS features.  GraphBLAS is a powerful tool for writing high-performance graph algorithms at a high level of abstraction, using linear algebraic operations on sparse adjacency matries with different semirings.
+
+The headline feature is taking the matrix multiplication function, and turning it into a higher order function. Instead of the normal arithmetic operations `+` and `*` a user could substitute other binary operators, like `max` or `&&`.
 
 When we multiply two matrices `A` and `B` as normal we use the following index expression:
 
@@ -71,6 +73,9 @@ julia> A * v
 ```
 
 This looks exactly like a matrix-vector multiplication with any other array type in Julia.
+With a different semiring, the result of `A*v` can return the parent node id of nodes 1 and 7,
+so that a BFS tree can be constructed.
+
 Where possible, `SuiteSparseGraphBLAS.jl` will behave exactly as any other array type in Julia. 
 But there are some places where `SuiteSparseGraphBLAS.jl` has significant extra functionality. 
 I'll illustrate that here by finding the number of triangles in the graph above.
@@ -198,6 +203,7 @@ As always, benchmark things yourself. Most operations will be faster in `SuiteSp
 However, maintaining good performance can be tricky in any numerical package, and there's plenty of ways to accidentally reduce performance. For instance, below you'll notice that when `A` is stored in `RowMajor` format it can be quite a bit faster than operations where `A` is stored in `ColMajor` format. This isn't always the case, some operations favor column orientation. 
 
 Always feel free to ask for performance tips in the [#graphblas Julia Slack channel](https://julialang.slack.com/archives/C023B0WGMHR) or open an issue on GitHub. And check out the [SuiteSparse:GraphBLAS User Guide](https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/GraphBLAS_UserGuide.pdf), especially the section on performance.
+Also see a [recent submission to the ACM Transactions on Mathemetical Software (under revision)](https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/toms_parallel_grb2.pdf) with more performance results.
 
 The performance is [discussed](#discussion) briefly after the plots below which show the runtime of several operations in `SuiteSparseGraphBLAS.jl` normalized to the runtime of `SparseArrays.SparseMatrixCSC` performing the same operations. `SuiteSparseGraphBLAS.jl` is shown in both column (green bars) and row (red bars) orientation, and with 1, 2, and 16 threads.
 
@@ -216,6 +222,15 @@ The performance is [discussed](#discussion) briefly after the plots below which 
 ## Transpose
 
 \figenv{}{/assets/plots/transpose.svg}{width:105%}
+
+## Submatrix Assignment
+
+The Julia expression (FIXME) `C(I,J)=A` assigns a matrix A into a submatrix of
+C.  It's a difficult function to optimize.  For a large sparse random matrix C
+(25 million by 25 million with 36 million entries), and with I and J selected
+at random, and A of size 5000-by-5000 with 50,000 entries, Julia takes
+TODO seconds using SparseArrays.jl, and MATLAB R2022a takes 270 seconds.
+With SuiteSparseGraphBLAS.jl, the time is just 0.26 seconds.
 
 ## Discussion
 
@@ -339,3 +354,8 @@ A new `Graphs.jl` backend built on `SuiteSparseGraphBLAS.jl` will allow users ac
 If you've got any need for sparse matrix operations give `SuiteSparseGraphBLAS.jl` a try, and feel free to open an issue or contact me directly if you run into problems or have a feature request! 
 
 -- Will Kimmerer
+
+### Acknowledgements
+
+Thanks to [Tim Davis](https://people.engr.tamu.edu/davis) for his help on the design of `SuiteSparseGraphBLAS.jl`.
+FIXME: A. Mehtra TODO, and Viral Shah TODO 
