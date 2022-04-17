@@ -172,8 +172,9 @@ Finally, `*(L, U, (+, pair); mask=A)` uses `A` as a mask. The mask prevents valu
 
 ## Summary of Primary Functions
 
+Most of the `SuiteSparse:GraphBLAS` interface is accessible through the expected Julia functions, alongside some new functions like `emul` or `subassign!`. 
+
 The complete documentation of supported operations can be found in [Operations](https://graphblas.juliasparse.org/stable/operations/).
-GraphBLAS operations are, where possible, methods of existing Julia functions listed in the third column.
 
 | GraphBLAS           | Operation                                                      | Julia                                      |
 |:--------------------|:--------------------------------------------------------------:|-------------------------------------------:|
@@ -205,48 +206,59 @@ However, maintaining good performance can be tricky in any numerical package, an
 Always feel free to ask for performance tips in the [#graphblas Julia Slack channel](https://julialang.slack.com/archives/C023B0WGMHR) or open an issue on GitHub. And check out the [SuiteSparse:GraphBLAS User Guide](https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/GraphBLAS_UserGuide.pdf), especially the section on performance.
 Also see a [recent submission to the ACM Transactions on Mathemetical Software (under revision)](https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/toms_parallel_grb2.pdf) with more performance results.
 
-The performance is [discussed](#discussion) briefly after the plots below which show the runtime of several operations in `SuiteSparseGraphBLAS.jl` normalized to the runtime of `SparseArrays.SparseMatrixCSC` performing the same operations. `SuiteSparseGraphBLAS.jl` is shown in both column (green bars) and row (red bars) orientation, and with 1, 2, and 16 threads.
+The performance is [discussed](#discussion) briefly after the plots below which show the runtime of several operations in `SuiteSparseGraphBLAS.jl` normalized to the runtime of `SparseArrays.SparseMatrixCSC` (orange bars) performing the same operations. `SuiteSparseGraphBLAS.jl` is shown in both column (blue bars) and row (red bars) orientation, and with 1, 2, and 16 threads.
 
 ## Sparse Matrix $\cdot$ Dense Vector
 
-\figenv{}{/assets/plots/densevec.svg}{width:105%}
+\figenv{}{/assets/plots/densevec.svg}{width:100%}
 
 ## Sparse Matrix $\cdot$ (n $\times$ 2) Dense Matrix
 
-\figenv{}{/assets/plots/denseby2.svg}{width:105%}
+\figenv{}{/assets/plots/denseby2.svg}{width:100%}
 
 ## Sparse Matrix $\cdot$ (n $\times$ 32) Dense Matrix
 
-\figenv{}{/assets/plots/denseby32.svg}{width:105%}
+\figenv{}{/assets/plots/denseby32.svg}{width:100%}
 
 ## Transpose
 
-\figenv{}{/assets/plots/transpose.svg}{width:105%}
+\figenv{}{/assets/plots/transpose.svg}{width:100%}
+
+`SparseArrays.jl` maintains performance parity for most problems when `SuiteSparseGraphBLAS.jl` is restricted to a single thread. This test takes advantage of some special `SuiteSparseGraphBLAS.jl` features like iso-valued matrices, but we restrict some significant optimizations like quick transposition by reinterpreting a by-column matrix as by-row to remain fair.
 
 ## Submatrix Assignment
 
-The Julia expression (FIXME) `C(I,J)=A` assigns a matrix A into a submatrix of
-C.  It's a difficult function to optimize.  For a large sparse random matrix C
-(25 million by 25 million with 36 million entries), and with I and J selected
+\figenv{}{/assets/plots/subassign.svg}{width:100%}
+
+|       | Size (Density) of C                   | Size (Density) of A   |
+|-------|:---------------------------------------|:-----------------------|
+| **A** | $10,000^{2} \quad (0.001)$                  | $2000^{2} \quad (0.1)$      |
+| **B** | $1,000,000^{2} \quad (0.0005)$              | $5000^{2} \quad (0.005)$    |
+| **C** | $25,000,000^{2} \quad (1 \times 10^{-7})$   | $5000^{2} \quad (0.002)$    |
+| **D** | $50,000,000^{2} \quad (1 \times 10^{-7})$   | $100,000^{2} \quad (0.001)$ |
+| **E** | $50,000,000^{2} \quad (1 \times 10^{-7})$   | $1000^{2} \quad (1.0)$      |
+
+The expression `C[I,J] = A` assigns a matrix A into a submatrix of
+C, a difficult function to optimize. For a large sparse random matrix C
+(25 million by 25 million with 62 million entries), and with I and J selected
 at random, and A of size 5000-by-5000 with 50,000 entries, Julia takes
-TODO seconds using SparseArrays.jl, and MATLAB R2022a takes 270 seconds.
-With SuiteSparseGraphBLAS.jl, the time is just 0.26 seconds.
+0.87 seconds using SparseArrays.jl, while using SuiteSparseGraphBLAS.jl with a single thread the time is just 0.04 seconds.
+
+The runtime for a `GBMatrix` by-row or by-column is equivalent, so only by-column is shown here. 
 
 ## Discussion
 
-When the dense matrix is low-dimensional and only a single thread is used, Julia compares very favorably with, and often beats, `SuiteSparseGraphBLAS.jl`. When 2 threads are available and the sparse matrix is stored in row-major orientation `SuiteSparseGraphBLAS.jl` begins to pull ahead significantly. Once a full 16 threads are used `SuiteSparseGraphBLAS.jl` on row-major matrices is between *8 and 31 times faster on all tested matrices.* 
+When the dense matrix is low-dimensional and only a single thread is used, Julia compares very favorably with, and often beats, `SuiteSparseGraphBLAS.jl`. When 2 threads are available and the sparse matrix is stored in row-major orientation `SuiteSparseGraphBLAS.jl` begins to pull ahead significantly. Once a full 16 threads are used `SuiteSparseGraphBLAS.jl` on multiplication of row-major matrices is between *8 and 31 times faster.* 
 
-`SuiteSparse:GraphBLAS` uses well over a dozen subalgorithms for matrix multiplication internally to achieve this performance. In particular when `A` is a sparse row-oriented matrix, and `B` is a dense column oriented matrix `SuiteSparse:GraphBLAS` will switch to a highly optimized dot-product algorithm, which is often much faster than the saxpy based algorithm used when `A` is column oriented.
+`SuiteSparse:GraphBLAS` uses well over a dozen subalgorithms for matrix multiplication internally to achieve this performance. In particular when `A` is a sparse row-oriented matrix, and `B` is a dense column oriented matrix `SuiteSparse:GraphBLAS` will switch to a highly optimized dot-product algorithm, which is often much faster than the saxpy based algorithm used when `A` is column oriented. This can be seen in cases above where the row-major runtimes can be > 2x faster than the column-major ones.
+
+While most sparse linear algebra libraries might neglect the parallelization of operations like transposition and submatrix-assignment, `SuiteSparseGraphBLAS.jl` takes full advantage of available threads in both cases. 
 
 # A New Version of SuiteSparseGraphBLAS.jl
 
-Versions 0.6 and 0.7 of `SuiteSparseGraphBLAS.jl` brought with them several new features.
+Versions 0.6 and 0.7 of `SuiteSparseGraphBLAS.jl` brought with them several new features and many under the hood changes. The changes under the hood will support faster development in the future and otherwise cleaned up the codebase. The type system was completely overhauled to enable new matrix types with special extensions, the low level wrapper was scrubbed of any human-written contamination, and the operator/user-defined-function system was rewritten.
 
-# New Features/Changes
-
-These new versions contained a *many* changes under the hood to support faster development in the future and otherwise clean up the codebase. The type system was completely overhauled to enable new matrix types with special extensions, the low level wrapper was scrubbed of any human-written contamination, and the operator/user-defined-function system was rewritten.
-
-Despite the focus on internals there are several new complete features as well as some experimental ones.
+# New Features
 
 ### User Defined Fill Value
 
@@ -357,5 +369,6 @@ If you've got any need for sparse matrix operations give `SuiteSparseGraphBLAS.j
 
 ### Acknowledgements
 
-Thanks to [Tim Davis](https://people.engr.tamu.edu/davis) for his help on the design of `SuiteSparseGraphBLAS.jl`.
-FIXME: A. Mehtra TODO, and Viral Shah TODO 
+Thanks to [Tim Davis](https://people.engr.tamu.edu/davis) for his help on the design of `SuiteSparseGraphBLAS.jl` and for the underlying C library `SuiteSparse:GraphBLAS`. 
+
+`SuiteSparseGraphBLAS.jl` was created originally by [Abhinav Mehndiratta](https://github.com/abhinavmehndiratta). Recent versions were developed by [Will Kimmerer](https://github.com/Wimmerer) under the mentorship of [Viral Shah](https://github.com/ViralBShah) and [Miha Zgubic](https://github.com/mzgubic).
