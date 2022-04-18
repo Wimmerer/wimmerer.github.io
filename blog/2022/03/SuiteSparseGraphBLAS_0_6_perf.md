@@ -1,7 +1,8 @@
 @def title = "SuiteSparseGraphBLAS.jl: An Introduction"
 @def authors = "Will Kimmerer"
-@def published = "March 23 2022"
-
+@def published = "April 18 2022"
+@def rss = "An Introduction to SuiteSparseGraphBLAS.jl"
+@def rss_pubdate = Date(2022, 4, 18)
 
 # SuiteSparseGraphBLAS.jl: An Introduction
 
