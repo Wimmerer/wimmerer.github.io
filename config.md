@@ -16,6 +16,10 @@ generate_rss = true
 website_title = "A Sparse Blog"
 website_descr = "Sparse blog about sparse things"
 website_url   = "https://wimmerer.github.io/"
+rss_website_title = "A Sparse Blog"
+rss_website_descr = "Sparse blog about sparse things"
+rss_website_url   = "https://wimmerer.github.io/"
+rss_full_content = true
 
 +++
 

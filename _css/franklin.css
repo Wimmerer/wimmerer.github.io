@@ -123,15 +123,15 @@ h6 {
 .franklin-content h1 {
   padding-bottom: 0.5em;
   border-bottom: 3px double lightgrey;
-  margin-top: 1.5em;
-  margin-bottom: 1em;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
 }
 
 .franklin-content h2 {
   padding-bottom: 0.3em;
   border-bottom: 1px solid lightgrey;
   margin-top: 2em;
-  margin-bottom: 1em;
+  margin-bottom: 0.5em;
 }
 
 .franklin-content h1 a { color: inherit; }
@@ -343,15 +343,16 @@ code {
 
 .bloglist {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  grid-gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding-top: 1%;
 }
 
 .bloglist > p {
   padding: 0.5rem 0.5rem 0.5rem 0.5rem;
   font-size: 0.9em;
   font-family: Open Sans, sans-serif;
-  font-weight: 100;
+  font-weight: 600;
   line-height: 1.1rem;
   border-radius: 5px;
   border: 1px solid #BFBFBF;
@@ -361,10 +362,70 @@ code {
   text-align:left;
   text-align: center;
   vertical-align: middle;
+  overflow-wrap: break-word;
 }
 
 .bloglist > p a {
   display: block;
-  font-weight: 600;
   padding-bottom: 0.5em;
+}
+
+.franklin-content .repl-block pre {
+  margin: 0;
+}
+
+.franklin-content .repl-block pre > code {
+  background: none;
+  padding: 0.5em;
+  padding-left: 0em;
+  border:none;
+}
+.franklin-content .repl-block {
+  padding: 1em 1em;
+  border: 2px solid #6B8E2340;
+  background: #fafafa;
+  border-radius: 0.5em;
+  margin-bottom: 1em;
+}
+.repl-block .cell-output {
+  padding-left: 1em;
+  color: #333;
+  padding-bottom: 0.5em;
+  font-family: monospace;
+}
+.repl-block .cell-output:empty {
+  display: none;
+}
+.repl-block .cell-output > code{
+  background: none;
+}
+.franklin-content .repl-block > p {
+  display: none;
+}
+.repl-block pre.code-output {
+  background: #6B8E2340;
+  padding-left: 0.5em;
+}
+
+.repl-block .julia-prompt {
+  color: #888;
+  display: inline;
+  padding-right: 1em;
+  padding-top: 0.33em;
+  font-size: 0.8em;
+  clear: both;
+  float: left;
+  font-family: monospace;
+}
+
+.code-output code {
+  border-radius: 0;
+  padding-left: 1em !important;
+  background: white;
+}
+
+.im-50 {text-align: center;}
+.im-50 img {
+    padding: 0;
+    width: 110%;
 }
