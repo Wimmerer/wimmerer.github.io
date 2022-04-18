@@ -23,15 +23,211 @@
 
 <item>
   <title>
-    <![CDATA[  More goodies  ]]>
+    <![CDATA[  SuiteSparseGraphBLAS.jl: An Introduction  ]]>
   </title>
-  <link> https://wimmerer.github.io/menu2/index.html </link>
-  <guid> https://wimmerer.github.io/menu2/index.html </guid>
+  <link> https://wimmerer.github.io/blog/2022/03/SuiteSparseGraphBLAS_0_6_perf/index.html </link>
+  <guid> https://wimmerer.github.io/blog/2022/03/SuiteSparseGraphBLAS_0_6_perf/index.html </guid>
   <description>
-    <![CDATA[  A short description of the page which would serve as <strong>blurb</strong> in a <code>RSS</code> feed; you can use basic markdown here but the whole description string must be a single line &#40;not a multiline string&#41;. Like this one for instance. Keep in mind that styling is minimal in RSS so for instance don&#39;t expect maths or fancy styling to work; images should be ok though: <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/Rick_and_Morty_characters.jpg" alt="" />  ]]>
+    <![CDATA[  An Introduction to SuiteSparseGraphBLAS.jl  ]]>
   </description>  
+  
+  <content:encoded>
+    <![CDATA[  <h1 id="suitesparsegraphblasjl_an_introduction">SuiteSparseGraphBLAS.jl: An Introduction</h1>
+<p>This blog post serves a couple purposes. The first is to introduce Julia users to <a href="https://graphblas.org/">GraphBLAS</a>, and the features and performance of the <a href="https://github.com/JuliaSparse/SuiteSparseGraphBLAS.jl"><code>SuiteSparseGraphBLAS.jl</code></a> package. The second is an update on new features in versions 0.6 and 0.7 as well as a roadmap for the near future. That&#39;s a lot for one blogpost so let&#39;s dive right in&#33;</p>
+<h2 id="what_is_suitesparsegraphblasjl">What is SuiteSparseGraphBLAS.jl</h2>
+<p><a href="https://github.com/JuliaSparse/SuiteSparseGraphBLAS.jl"><code>SuiteSparseGraphBLAS.jl</code></a> is a sparse linear algebra library with some special features oriented to graph algorithms.  It&#39;s an interface to the SuiteSparse implementation of the <a href="https://graphblas.org">GraphBLAS</a> standard, by <a href="https://people.engr.tamu.edu/davis">Tim Davis</a>.  SuiteSparseGraphBLAS.jl serves two purposes: &#40;1&#41; it can replace <code>SparseArrays.jl</code> with faster parallel methods when using the plus-times semiring conventional linear algebra, and &#40;2&#41; it serves as a Julia interface to the full set of GraphBLAS features.  GraphBLAS is a powerful tool for writing high-performance graph algorithms at a high level of abstraction, using linear algebraic operations on sparse adjacency matries with different semirings.</p>
+<p>The headline feature is taking the matrix multiplication function, and turning it into a higher order function. Instead of the normal arithmetic operations <code>&#43;</code> and <code>*</code> a user could substitute other binary operators, like <code>max</code> or <code>&amp;&amp;</code>.</p>
+<p>When we multiply two matrices <code>A</code> and <code>B</code> as normal we use the following index expression:</p>
+\[ C_{ik} = \sum\limits_{j=1}^{n}{A_{ij} \times B_{jk}} \]
+<p>This expression uses the arithmetic <a href="https://en.wikipedia.org/wiki/Semiring">semiring</a> \((+, \times)\). A semiring is an abstract algebra structure consisting of two binary operators that interact in a particular way. </p>
+<p>There are plenty of other interesting semirings to choose from, and no reason to limit ourselves to the arithmetic one&#33; We could, for instance, use the max-plus semiring \((\max, +)\) &#40;one of the <a href="https://en.wikipedia.org/wiki/Tropical_semiring">tropical semirings</a>&#41;. Then our index expression above looks like:</p>
+\[ C_{ik} = \max\limits_{j=1}^{n}{(A_{ij} + B_{jk})} \]
+<p>This semiring has many applications to dynamic programming and graphs, but to wrap up this short intro, GraphBLAS lets you perform  this operation, particularly on sparse matrices:</p>
+\[ C_{ik} = \bigoplus\limits_{j=1}^{n}{(A_{ij} \otimes B_{jk})} \]
+<p>where \(\oplus\) is some binary operator &#40;a monoid in particular&#41; which takes the place of the \(\sum\) reduction, and \(\otimes\) is some binary operator which takes the place of \(\times\) in typical arithmetic.</p>
+<h2 id="lets_see_some_code">Let&#39;s see some code&#33;&#33;</h2>
+<p>What does a simple operation look like? The equivalence between a matrix-vector multiplication and breadth-first search is a key component of linear algebraic graph algorithms.</p><figure style="text-align:center;">
+<img src="https://wimmerer.github.io/assets/AdjacencyBFS.png" style="padding:0; width:100%" alt=" Adjacency matrix of a directed graph and a single iteration of BFS"/>
+<figcaption> Adjacency matrix of a directed graph and a single iteration of BFS</figcaption>
+</figure><pre><code class="language-julia">julia&gt; using SuiteSparseGraphBLASjulia&gt; A &#61; GBMatrix&#40;&#91;1,1,2,2,3,4,4,5,6,7,7,7&#93;, &#91;2,4,5,7,6,1,3,6,3,3,4,5&#93;, &#91;1:12...&#93;&#41;
+7x7 GraphBLAS int64_t matrix, bitmap by row
+  12 entries, memory: 832 bytes    &#40;1,2&#41;   1
+    &#40;1,4&#41;   2
+    &#40;2,5&#41;   3
+    &#40;2,7&#41;   4
+    &#40;3,6&#41;   5
+    &#40;4,1&#41;   6
+    &#40;4,3&#41;   7
+    &#40;5,6&#41;   8
+    &#40;6,3&#41;   9
+    &#40;7,3&#41;   10
+    &#40;7,4&#41;   11
+    &#40;7,5&#41;   12julia&gt; v &#61; GBVector&#40;&#91;4&#93;, &#91;10&#93;; nrows &#61; 7&#41;
+7x1 GraphBLAS int64_t matrix, bitmap by col
+  1 entry, memory: 272 bytes
+  iso value:   10    &#40;4,1&#41;   10julia&gt; A * v
+7x1 GraphBLAS int64_t matrix, bitmap by col
+  2 entries, memory: 328 bytes    &#40;1,1&#41;   20
+    &#40;7,1&#41;   110</code></pre>
+<p>This looks exactly like a matrix-vector multiplication with any other array type in Julia. With a different semiring, the result of <code>A*v</code> can return the parent node id of nodes 1 and 7, so that a BFS tree can be constructed.</p>
+<p>Where possible, <code>SuiteSparseGraphBLAS.jl</code> will behave exactly as any other array type in Julia.  But there are some places where <code>SuiteSparseGraphBLAS.jl</code> has significant extra functionality.  I&#39;ll illustrate that here by finding the number of triangles in the graph above.</p>
+<p>For those that haven&#39;t seen triangle counting before, a triangle in a graph is a set of three vertices whose edges form a triangle. We&#39;ll pretend like the graph is undirected, and then you can see two triangles: \((2, 5, 7)\) and \((3, 4, 7)\).</p>
+<pre><code class="language-julia">julia&gt; using SuiteSparseGraphBLAS: pairjulia&gt; function cohen&#40;A&#41;
+         U &#61; triu&#40;A&#41;
+         L &#61; tril&#40;A&#41;
+         return reduce&#40;&#43;, *&#40;L, U, &#40;&#43;, pair&#41;; mask&#61;A&#41;&#41; ÷ 2
+       end
+cohen &#40;generic function with 1 method&#41;julia&gt; function sandia&#40;A&#41;
+         L &#61; tril&#40;A&#41;
+         return reduce&#40;&#43;, *&#40;L, L, &#40;&#43;, pair&#41;; mask&#61;L&#41;&#41;
+       end
+sandia &#40;generic function with 1 method&#41;julia&gt; M &#61; eadd&#40;A, A&#39;, &#43;&#41; #Make undirected/symmetric
+7x7 GraphBLAS int64_t matrix, bitmap by row
+  20 entries, memory: 832 bytes    &#40;1,2&#41;   1
+    &#40;1,4&#41;   8
+    &#40;2,1&#41;   1
+    &#40;2,5&#41;   3
+    &#40;2,7&#41;   4
+    &#40;3,4&#41;   7
+    &#40;3,6&#41;   14
+    &#40;3,7&#41;   10
+    &#40;4,1&#41;   8
+    &#40;4,3&#41;   7
+    &#40;4,7&#41;   11
+    &#40;5,2&#41;   3
+    &#40;5,6&#41;   8
+    &#40;5,7&#41;   12
+    &#40;6,3&#41;   14
+    &#40;6,5&#41;   8
+    &#40;7,2&#41;   4
+    &#40;7,3&#41;   10
+    &#40;7,4&#41;   11
+    &#40;7,5&#41;   12julia&gt; cohen&#40;M&#41;
+2julia&gt; sandia&#40;M&#41;
+2</code></pre>
+<p>There are a couple unique features of <code>SuiteSparseGraphBLAS.jl</code> used in the two methods, <code>cohen</code> and <code>sandia</code> above.</p>
+<p>The first is the <code>pair</code> function. This function returns <code>1</code> whenever both arguments <code>x</code> and <code>y</code> are explicit stored values, otherwise it returns nothing &#40;an implicit zero&#41;. To illustrate:</p>
+<pre><code class="language-julia">julia&gt; using SuiteSparseGraphBLASjulia&gt; u &#61; GBVector&#40;&#91;2,4,5&#93;, &#91;4,5,6&#93;&#41;
+5x1 GraphBLAS int64_t matrix, bitmap by col
+  3 entries, memory: 328 bytes    &#40;2,1&#41;   4
+    &#40;4,1&#41;   5
+    &#40;5,1&#41;   6julia&gt; v &#61; GBVector&#40;&#91;1,3,5&#93;, &#91;1,2,3&#93;&#41;
+5x1 GraphBLAS int64_t matrix, bitmap by col
+  3 entries, memory: 328 bytes    &#40;1,1&#41;   1
+    &#40;3,1&#41;   2
+    &#40;5,1&#41;   3julia&gt; SuiteSparseGraphBLAS.pair.&#40;u, v&#41;
+5x1 GraphBLAS int64_t matrix, bitmap by col
+  1 entry, memory: 272 bytes
+  iso value:   1    &#40;5,1&#41;   1</code></pre>
+<p>This function is primarily a performance enhancement. In an algorithm like triangle counting we don&#39;t care about the weight of a particular edge, just that it exists. <code>pair</code> lets us avoid a costly multiplication by just checking that <code>x</code> is a stored value in <code>u</code><em>and</em> <code>y</code> is a stored value in <code>v</code>.</p>
+<p>The second feature is the semirings discussed in What is SuiteSparseGraphBLAS.jl above. The tuple <code>&#40;&#43;, pair&#41;</code> in <code>*&#40;L, U, &#40;&#43;, pair&#41;; mask&#61;A&#41;</code> indicates the the <code>*</code> function is using the <code>&#43;</code>-<code>pair</code> semiring:</p>
+\[ C_{ik} = \sum\limits_{j=1}^{n}{\text{pair}(A_{ij}, B_{jk})} \]
+<p>Finally, <code>*&#40;L, U, &#40;&#43;, pair&#41;; mask&#61;A&#41;</code> uses <code>A</code> as a mask. The mask prevents values from being placed in the result where the mask is false &#40;or true if complemented&#41;. This is a powerful algorithmic and performance tool.</p>
+<h2 id="summary_of_primary_functions">Summary of Primary Functions</h2>
+<p>Most of the <code>SuiteSparse:GraphBLAS</code> interface is accessible through the expected Julia functions, alongside some new functions like <code>emul</code> or <code>subassign&#33;</code>. </p>
+<p>The complete documentation of supported operations can be found in <a href="https://graphblas.juliasparse.org/stable/operations/">Operations</a>.</p>
+<table><tr><th align="left">GraphBLAS</th><th align="center">Operation</th><th align="right">Julia</th></tr><tr><td align="left"><code>mxm</code>, <code>mxv</code>, <code>vxm</code></td><td align="center">\(\bf C \langle M \rangle = C \odot AB\)</td><td align="right"><code>mul&#33;</code> or <code>*</code></td></tr><tr><td align="left"><code>eWiseMult</code></td><td align="center">\(\bf C \langle M \rangle = C \odot (A \otimes B)\)</td><td align="right"><code>emul&#91;&#33;&#93;</code> or <code>.</code> broadcasting</td></tr><tr><td align="left"><code>eWiseAdd</code></td><td align="center">\(\bf C \langle M \rangle = C \odot (A \oplus  B)\)</td><td align="right"><code>eadd&#91;&#33;&#93;</code></td></tr><tr><td align="left"><code>extract</code></td><td align="center">\(\bf C \langle M \rangle = C \odot A(I,J)\)</td><td align="right"><code>extract&#91;&#33;&#93;</code>, <code>getindex</code></td></tr><tr><td align="left"><code>subassign</code></td><td align="center">\(\bf C (I,J) \langle M \rangle = C(I,J) \odot A\)</td><td align="right"><code>subassign&#91;&#33;&#93;</code> or <code>setindex&#33;</code></td></tr><tr><td align="left"><code>assign</code></td><td align="center">\(\bf C \langle M \rangle (I,J) = C(I,J) \odot A\)</td><td align="right"><code>assign&#91;&#33;&#93;</code></td></tr><tr><td align="left"><code>apply</code></td><td align="center">\({\bf C \langle M \rangle = C \odot} f{\bf (A)}\)</td><td align="right"><code>apply&#91;&#33;&#93;</code>, <code>map&#91;&#33;&#93;</code> or <code>.</code> broadcasting</td></tr><tr><td align="left"></td><td align="center">\({\bf C \langle M \rangle = C \odot} f({\bf A},y)\)</td><td align="right"></td></tr><tr><td align="left"></td><td align="center">\({\bf C \langle M \rangle = C \odot} f(x,{\bf A})\)</td><td align="right"></td></tr><tr><td align="left"><code>select</code></td><td align="center">\({\bf C \langle M \rangle = C \odot} f({\bf A},k)\)</td><td align="right"><code>select&#91;&#33;&#93;</code></td></tr><tr><td align="left"><code>reduce</code></td><td align="center">\({\bf w \langle m \rangle = w \odot} [{\oplus}_j {\bf A}(:,j)]\)</td><td align="right"><code>reduce&#91;&#33;&#93;</code></td></tr><tr><td align="left"></td><td align="center">\(s = s \odot [{\oplus}_{ij}  {\bf A}(i,j)]\)</td><td align="right"></td></tr><tr><td align="left"><code>transpose</code></td><td align="center">\(\bf C \langle M \rangle = C \odot A^{\sf T}\)</td><td align="right"><code>gbtranspose&#91;&#33;&#93;</code>, lazy: <code>transpose</code>, <code>&#39;</code></td></tr><tr><td align="left"><code>kronecker</code></td><td align="center">\(\bf C \langle M \rangle = C \odot \text{kron}(A, B)\)</td><td align="right"><code>kron&#91;&#33;&#93;</code></td></tr></table>
+<p>where \(\bf M\) is a <code>GBArray</code> mask, \(\odot\) is a binary operator for accumulating into \(\bf C\), and \(\otimes\) and \(\oplus\) are a binary operation and commutative monoid respectively. \(f\) is either a unary or binary operator.</p>
+<h1 id="show_me_the_numbers">Show Me the Numbers&#33;</h1>
+<p><code>SuiteSparseGraphBLAS.jl</code> has loads of extensions to normal sparse linear algebra, but it&#39;s also <em>fast</em> and multithreaded. Let&#39;s look at some numbers&#33;</p>
+<p>As always, benchmark things yourself. Most operations will be faster in <code>SuiteSparseGraphBLAS.jl</code>, particularly when the matrices are large enough that multithreading kicks in. </p>
+<p>However, maintaining good performance can be tricky in any numerical package, and there&#39;s plenty of ways to accidentally reduce performance. For instance, below you&#39;ll notice that when <code>A</code> is stored in <code>RowMajor</code> format it can be quite a bit faster than operations where <code>A</code> is stored in <code>ColMajor</code> format. This isn&#39;t always the case, some operations favor column orientation. </p>
+<p>Always feel free to ask for performance tips in the <a href="https://julialang.slack.com/archives/C023B0WGMHR">#graphblas Julia Slack channel</a> or open an issue on GitHub. And check out the <a href="https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/GraphBLAS_UserGuide.pdf">SuiteSparse:GraphBLAS User Guide</a>, especially the section on performance. Also see a <a href="https://raw.githubusercontent.com/DrTimothyAldenDavis/GraphBLAS/stable/Doc/toms_parallel_grb2.pdf">recent submission to the ACM Transactions on Mathemetical Software &#40;under revision&#41;</a> with more performance results.</p>
+<p>The plots below show the runtime of several operations in <code>SuiteSparseGraphBLAS.jl</code> normalized to the runtime of <code>SparseArrays.SparseMatrixCSC</code> &#40;orange bars&#41; performing the same operations. <code>SuiteSparseGraphBLAS.jl</code> is shown in both column &#40;blue bars&#41; and row &#40;red bars&#41; orientation where necessary, and with 1, 2, and 16 threads.</p>
+<p>Matrix multiplication results are discussed briefly after the 3rd plot, all matrices are drawn from the <a href="https://sparse.tamu.edu/">SuiteSparse Matrix Collection</a> unless randomly generated.</p>
+<h2 id="sparse_matrix_cdot_dense_vector">Sparse Matrix \(\cdot\) Dense Vector</h2><figure style="text-align:center;">
+<img src="https://wimmerer.github.io/assets/plots/densevec.svg" style="padding:0; width:100%" alt=" "/>
+<figcaption> </figcaption>
+</figure><h2 id="sparse_matrix_cdot_n_times_2_dense_matrix">Sparse Matrix \(\cdot\) &#40;n \(\times\) 2&#41; Dense Matrix</h2><figure style="text-align:center;">
+<img src="https://wimmerer.github.io/assets/plots/denseby2.svg" style="padding:0; width:100%" alt=" "/>
+<figcaption> </figcaption>
+</figure><h2 id="sparse_matrix_cdot_n_times_32_dense_matrix">Sparse Matrix \(\cdot\) &#40;n \(\times\) 32&#41; Dense Matrix</h2><figure style="text-align:center;">
+<img src="https://wimmerer.github.io/assets/plots/denseby32.svg" style="padding:0; width:100%" alt=" "/>
+<figcaption> </figcaption>
+</figure><p>When the dense matrix is low-dimensional and only a single thread is used, Julia compares very favorably with, and often beats, <code>SuiteSparseGraphBLAS.jl</code>. However, when 2 threads are available and the sparse matrix is stored in row-major orientation <code>SuiteSparseGraphBLAS.jl</code> begins to pull ahead significantly. Once a full 16 threads are used <code>SuiteSparseGraphBLAS.jl</code> on multiplication of row-major matrices is between <em>8 and 31 times faster.</em> </p>
+<p><code>SuiteSparse:GraphBLAS</code> uses well over a dozen subalgorithms for matrix multiplication internally to achieve this performance. In particular when <code>A</code> is a sparse row-oriented matrix, and <code>B</code> is a dense column oriented matrix <code>SuiteSparse:GraphBLAS</code> will switch to a highly optimized dot-product algorithm, which is often much faster than the saxpy based algorithm used when <code>A</code> is column oriented. This is noticeable in cases above where the row-major runtimes can be &gt; 2x faster than the column-major ones.</p>
+<h2 id="transpose">Transpose</h2><figure style="text-align:center;">
+<img src="https://wimmerer.github.io/assets/plots/transpose.svg" style="padding:0; width:100%" alt=" "/>
+<figcaption> </figcaption>
+</figure><p><code>SparseArrays.jl</code> maintains performance parity for most problems when <code>SuiteSparseGraphBLAS.jl</code> is restricted to a single thread, but can be as much as 10x slower when 16 threads are used. This test takes advantage of some special <code>SuiteSparseGraphBLAS.jl</code> features like iso-valued matrices, but we restrict some significant optimizations like quick transposition &#40;reinterpreting a by-column matrix as by-row&#41; to remain fair. </p>
+<h2 id="submatrix_assignment">Submatrix Assignment</h2><figure style="text-align:center;">
+<img src="https://wimmerer.github.io/assets/plots/subassign.svg" style="padding:0; width:100%" alt=" Note the log scale"/>
+<figcaption> Note the log scale</figcaption>
+</figure><p>|       | Size &#40;Density&#41; of C                   | Size &#40;Density&#41; of A   | |–––-|:–––––––––––––––––––-|:–––––––––––-| | <strong>A</strong> | \(10,000^{2} \quad (0.001)\)                  | \(2000^{2} \quad (0.1)\)      | | <strong>B</strong> | \(1,000,000^{2} \quad (0.0005)\)              | \(5000^{2} \quad (0.005)\)    | | <strong>C</strong> | \(25,000,000^{2} \quad (1 \times 10^{-7})\)   | \(5000^{2} \quad (0.002)\)    | | <strong>D</strong> | \(50,000,000^{2} \quad (1 \times 10^{-7})\)   | \(100,000^{2} \quad (0.001)\) | | <strong>E</strong> | \(50,000,000^{2} \quad (1 \times 10^{-7})\)   | \(1000^{2} \quad (1.0)\)      |</p>
+<p>The expression <code>C&#91;I,J&#93; &#61; A</code> assigns a matrix A into a submatrix of C, a difficult function to optimize. For a large sparse random matrix C &#40;25 million by 25 million with 62 million entries&#41;, and with I and J selected at random, and A of size 5000-by-5000 with 50,000 entries, Julia takes 0.87 seconds using SparseArrays.jl, while using SuiteSparseGraphBLAS.jl with a single thread the time is just 0.04 seconds.</p>
+<p>The runtime for a <code>GBMatrix</code> by-row or by-column is equivalent, so only by-column is shown here. </p>
+<h1 id="a_new_version_of_suitesparsegraphblasjl">A New Version of SuiteSparseGraphBLAS.jl</h1>
+<p>Versions 0.6 and 0.7 of <code>SuiteSparseGraphBLAS.jl</code> brought with them several new features and many under the hood changes. The changes under the hood will support faster development in the future and otherwise cleaned up the codebase. The type system was completely overhauled to enable new matrix types with special extensions, the low level wrapper was scrubbed of any human-written contamination, and the operator/user-defined-function system was rewritten.</p>
+<h1 id="new_features">New Features</h1>
+<h3 id="user_defined_fill_value">User Defined Fill Value</h3>
+<p>The default <code>GBMatrix</code> returns <code>nothing</code> when indexing into an &quot;implicit-zero&quot; or non-stored value. This better matches the GraphBLAS method of attaching the implicit values to <em>operators</em> like <code>max</code> and <code>*</code>. It also is more natural for graphs, where there is a semantic difference between a stored zero &#40;an edge with weight zero&#41;, and an implicit zero &#40;no edge&#41;.</p>
+<p>Users may now directly set the fill value best suited to their application. This can be done in 3 ways:</p>
+<ol>
+<li><p>On construction: a new keyword argument for constructors, <code>fill</code>.</p>
+</li>
+<li><p><code>setfill&#33;</code>: a new mutating function which can be used to change the fill value. This function may only change the fill value to another value within the same domain as the original fill value to maintain type stability.</p>
+</li>
+<li><p><code>setfill</code>: a new non-mutating function which returns a new <code>GBMatrix</code> which aliases the original, but with a new fill value. This new value may be of any type.</p>
+</li>
+</ol>
+<p>These changes allow the <code>GBMatrix</code> to be seamlessly used for general scientific applications that expect implicit zeros <em>to be zero</em>, while still adhering to the original design intended for graph algorithms.</p>
+<h3 id="mmread_function"><code>mmread</code> Function</h3>
+<p>Previously reading Matrix Market files was supported only by first reading into a <code>SparseArrays.SparseMatrixCSC</code> before converting, which was slow and memory intensive. We now have a native <code>SuiteSparseGraphBLAS.mmread</code> function. It remains unexported to avoid clashes with other packages. In the future it will likely be superseded &#40;but not replaced&#41; by some function which can automatically detect and read from a number of formats.</p>
+<h3 id="serialization">Serialization</h3>
+<p>Using the <code>Serialization</code> Julia standard library users can now easily serialize and deserialize a GraphBLAS data structures. The serialized array is compressed using LZ4 making both read and write operations much faster than operating on a Matrix Market file.</p>
+<h3 id="storageorders">StorageOrders</h3>
+<p>A new dependency on StorageOrders.jl makes it easier to parametrize new <code>AbstractGBArray</code> types, for instance by restricting the orientation to <code>StorageOrders.RowMajor&#40;&#41;</code> or <code>StorageOrders.ColMajor&#40;&#41;</code>. The experimental <code>OrientedGBMatrix</code> and <code>GBMatrixC</code>/<code>GBMatrixR</code> subtypes take advantage of this.</p>
+<p>Users may now also call <code>gbset&#40;A, :format, RowMajor&#40;&#41;&#41;</code>, instead of <code>gbset&#40;A, :format, :byrow&#41;</code> avoiding the use of magic symbols. This interface will continue to improve in the future.</p>
+<h3 id="apply_and_deprecation_of_scalar_argument_map"><code>apply</code> and Deprecation of Scalar Argument <code>map</code></h3>
+<p>The new function <code>apply&#91;&#33;&#93;</code> is now the direct wrapper of the <code>GrB_apply</code> function. <code>map</code> still functions as expected, but no longer accepts a scalar argument. Previously, when <code>map</code> was the direct wrapper of <code>GrB_apply</code>, <code>map&#40;&#43;, A, 3&#41;</code> was legal and equivalent to <code>A .&#43; 3</code>. This caused many &#40;mostly obscure&#41; ambiguities between <code>map&#40;op::Function, A::GBArray, x&#41;</code>, <code>map&#40;op::Function, x, A::GBArray&#41;</code> and several external methods. </p>
+<p><code>apply</code> now performs this function, although the recommended method remains dot-broadcasting. </p>
+<h3 id="wait_function_fully_implemented"><code>wait</code> Function Fully Implemented</h3>
+<p>To fully support calling SuiteSparseGraphBLAS.jl from multiple user threads the <code>wait</code> function has been fully implemented, which allows users to use a matrix from multiple threads simultaneously.</p>
+<h2 id="experimental_functionality">Experimental Functionality</h2>
+<h3 id="as_function"><code>as</code> Function</h3>
+<p>The new <code>as</code> functions grew out of an internal need to safely and quickly view a <code>GBMatrix</code> as a <code>DenseMatrix</code>/<code>SparseMatrixCSC</code> or vice-versa. </p>
+<pre><code class="language-julia">julia&gt; A &#61; GBMatrix&#40;&#91;&#91;1, 2&#93; &#91;3,4&#93;&#93;&#41;
+2x2 GraphBLAS int64_t matrix, full by col
+  4 entries, memory: 288 bytes    &#40;1,1&#41;   1
+    &#40;2,1&#41;   2
+    &#40;1,2&#41;   3
+    &#40;2,2&#41;   4julia&gt; SuiteSparseGraphBLAS.as&#40;Matrix, A&#41; do mat
+           display&#40;mat&#41;
+           mat .&#43;&#61; 1
+           sum&#40;mat&#41;
+       end
+2×2 Matrix&#123;Int64&#125;:
+ 1  3
+ 2  4
+14julia&gt; A
+2x2 GraphBLAS int64_t matrix, full by col
+  4 entries, memory: 288 bytes    &#40;1,1&#41;   2
+    &#40;2,1&#41;   3
+    &#40;1,2&#41;   4
+    &#40;2,2&#41;   5</code></pre>
+<p>Note that this functionality is currently somewhat dangerous. If <code>mat</code> escapes the scope of <code>as</code> in some way, for instance by returning the <code>Transpose</code> of <code>mat</code>, the underlying memory may be freed by <code>SuiteSparseGraphBLAS.jl</code>. If the user attempts to return <code>mat</code> directly the <code>as</code> function will gracefully copy the matrix rather than return an array that may be invalidated in the future.</p>
+<h3 id="automatic_differentiation">Automatic Differentiation</h3>
+<p>Automatic Differentiation support continues to improve, with additional constructor rules, and rules for the <code>second</code> and <code>first</code> families of semirings. The biggest remaining missing pieces are the tropical semirings, user-defined functions and more rigorous testing of user use-cases.</p>
+<h1 id="roadmap">Roadmap</h1>
+<p>There&#39;s lots of upcoming features, extensions, and JuliaLab Compiler Trickery™ on the horizon but here&#39;s a few important updates to look out for:</p>
+<h3 id="suitesparse_support">SuiteSparse Support</h3>
+<p>Supporting the SuiteSparse solvers is 1st on the list, and support will be released sometime in April 2022. This is a relatively simple addition, but involves quite a bit of duplicated code from <code>SuiteSparse.jl</code>, which assumes the use of <code>SparseMatrixCSC</code>.</p>
+<h3 id="gbpiratejl_full_release">GBPirate.jl Full Release</h3>
+<p><code>GBPirate.jl</code> allows users of <code>SparseArrays.jl</code> to pirate certain methods of that package to use the more performant ones found in <code>SuiteSparseGraphBLAS.jl</code>. Because this involves copying on output it is not always faster, and the remaining development involves finding a heuristic for when this is beneficial.</p>
+<h3 id="user_defined_types">User Defined Types</h3>
+<p>User defined types are not currently part of the public interface of <code>SuiteSparseGraphBLAS.jl</code> while the interface is improved. This feature will enable users to use any statically sized <code>isbits</code> type, like dual-numbers, colors,  as elements of a <code>GBMatrix</code>. Release is planned for late April 2022.</p>
+<h3 id="gbgraphsjl">GBGraphs.jl</h3>
+<p>A new <code>Graphs.jl</code> backend built on <code>SuiteSparseGraphBLAS.jl</code> will allow users access to the full <code>Graphs.jl</code> ecosystem, while letting them develop fast algorithms in the language of linear algebra&#33;</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>If you&#39;ve got any need for sparse matrix operations give <code>SuiteSparseGraphBLAS.jl</code> a try, and feel free to open an issue or contact me directly if you run into problems or have a feature request&#33; </p>
+<p>– Will Kimmerer</p>
+<h3 id="acknowledgements">Acknowledgements</h3>
+<p>Thanks to <a href="https://people.engr.tamu.edu/davis">Tim Davis</a> for his help on the design of <code>SuiteSparseGraphBLAS.jl</code> and for the underlying C library <code>SuiteSparse:GraphBLAS</code>. </p>
+<p><code>SuiteSparseGraphBLAS.jl</code> was created originally by <a href="https://github.com/abhinavmehndiratta">Abhinav Mehndiratta</a>. Recent versions were developed by <a href="https://github.com/Wimmerer">Will Kimmerer</a> under the mentorship of <a href="https://github.com/ViralBShah">Viral Shah</a> and <a href="https://github.com/mzgubic">Miha Zgubic</a>.</p>
+ ]]>
+  </content:encoded>
     
-  <pubDate>Wed, 01 May 2019 00:00:00 +0000</pubDate>  
+  <pubDate>Mon, 18 Apr 2022 00:00:00 +0000</pubDate>  
   
   
   <atom:author>
