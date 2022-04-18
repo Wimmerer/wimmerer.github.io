@@ -237,13 +237,13 @@ When the dense matrix is low-dimensional and only a single thread is used, Julia
 
 \figenv{Note the log scale}{/assets/plots/subassign.svg}{width:100%}
 
-|       | Size (Density) of C                         | Size (Density) of A         |
-|-------|---------------------------------------------|-----------------------------|
-| **A** | $10,000^{2} \quad (0.001)$                  | $2000^{2} \quad (0.1)$      |
-| **B** | $1,000,000^{2} \quad (0.0005)$              | $5000^{2} \quad (0.005)$    |
-| **C** | $25,000,000^{2} \quad (1 \times 10^{-7})$   | $5000^{2} \quad (0.002)$    |
-| **D** | $50,000,000^{2} \quad (1 \times 10^{-7})$   | $100,000^{2} \quad (0.001)$ |
-| **E** | $50,000,000^{2} \quad (1 \times 10^{-7})$   | $1000^{2} \quad (1.0)$      |
+|Benchmark Group | Size (Density) of C                        | Size (Density) of A        |
+|:---------------|:------------------------------------------:|----------------------------|
+|**A**           |$10,000^{2} \quad (0.001)$                  |$2000^{2} \quad (0.1)$      |
+|**B**           |$1,000,000^{2} \quad (0.0005)$              |$5000^{2} \quad (0.005)$    |
+|**C**           |$25,000,000^{2} \quad (1 \times 10^{-7})$   |$5000^{2} \quad (0.002)$    |
+|**D**           |$50,000,000^{2} \quad (1 \times 10^{-7})$   |$100,000^{2} \quad (0.001)$ |
+|**E**           |$50,000,000^{2} \quad (1 \times 10^{-7})$   |$1000^{2} \quad (1.0)$      |
 
 The expression `C[I,J] = A` assigns a matrix A into a submatrix of
 C, a difficult function to optimize. For a large sparse random matrix C
