@@ -1,4 +1,4 @@
-@def title = "Franklin Example"
+@def title = "Sparse Blog"
 @def tags = ["syntax", "code"]
 
 {{ blogposts }}
