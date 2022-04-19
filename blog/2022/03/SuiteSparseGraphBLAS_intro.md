@@ -3,7 +3,7 @@
 @def published = "April 18 2022"
 @def rss = "An Introduction to SuiteSparseGraphBLAS.jl"
 @def rss_pubdate = Date(2022, 4, 18)
-
+@def tags = ["Julia", "GraphBLAS", "juliabloggers"]
 # SuiteSparseGraphBLAS.jl: An Introduction
 
 This blog post serves a couple purposes. The first is to introduce Julia users to [GraphBLAS](https://graphblas.org/), and the features and performance of the [`SuiteSparseGraphBLAS.jl`](https://github.com/JuliaSparse/SuiteSparseGraphBLAS.jl) package. The second is an update on new features in versions 0.6 and 0.7 as well as a roadmap for the near future. That's a lot for one blogpost so let's dive right in!

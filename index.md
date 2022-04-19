@@ -1,5 +1,4 @@
 @def title = "Sparse Blog"
-@def tags = ["syntax", "code"]
 
 {{ blogposts }}
 
